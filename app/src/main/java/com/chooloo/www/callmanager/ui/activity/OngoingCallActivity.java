@@ -495,16 +495,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         removeOverlay();
     }
 
-    @OnClick({R.id.button_speaker, R.id.button_hold, R.id.button_mute, R.id.button_bluetooth})
-    public void changeColors(View view) {
-        ImageView imageButton = (ImageView) view;
-        if (view.isActivated()) {
-            imageButton.setColorFilter(ContextCompat.getColor(this, R.color.white));
-        } else {
-            imageButton.setColorFilter(ContextCompat.getColor(this, R.color.soft_black));
-        }
-    }
-
     // -- Call Actions -- //
 
     /**
@@ -897,7 +887,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         } else {
             BluetoothUtils.toggleBluetooth(this, false);
             mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_bluetooth_black_24dp));
-            mBluetoothButton.setColorFilter(ContextCompat.getColor(this, R.color.grey_800), PorterDuff.Mode.SRC_IN);
             mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_disabled_black_24dp));
             mBluetoothButton.setEnabled(false);
             mBluetoothButton.setActivated(false);

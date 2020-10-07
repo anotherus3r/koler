@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
@@ -14,6 +15,7 @@ import android.os.Vibrator;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -24,6 +26,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import com.chooloo.www.callmanager.R;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import org.jetbrains.annotations.NotNull;
@@ -228,7 +231,6 @@ public class Utilities {
             imm.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY);
     }
 
-
     /**
      * Returns only the numbers from a string (removes special characters and spaces
      *
@@ -252,4 +254,24 @@ public class Utilities {
         activity.startActivity(smsIntent);
     }
 
+//    public static int getAttributeColor(Context context, int attributeId) {
+//        TypedValue typedValue = new TypedValue();
+//        context.getTheme().resolveAttribute(attributeId, typedValue, true);
+//        int colorRes = typedValue.resourceId;
+//        int color = -1;
+//        try {
+//            color = context.getResources().getColor(colorRes);
+//        } catch (Resources.NotFoundException e) {
+//            Timber.w("Not found color resource by id: " + colorRes);
+//        }
+//        return color;
+//    }
+
+    public static int getAttributeColor(Context context, int attributeId) {
+        TypedValue typedValue = new TypedValue();
+        TypedArray a = context.obtainStyledAttributes(typedValue.data, new int[]{attributeId});
+        int color = a.getColor(0, 0);
+        a.recycle();
+        return color;
+    }
 }
