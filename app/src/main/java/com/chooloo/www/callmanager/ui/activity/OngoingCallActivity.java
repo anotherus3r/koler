@@ -8,6 +8,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.PorterDuff;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -49,7 +51,9 @@ import com.chooloo.www.callmanager.database.entity.Contact;
 import com.chooloo.www.callmanager.listener.AllPurposeTouchListener;
 import com.chooloo.www.callmanager.listener.LongClickOptionsListener;
 import com.chooloo.www.callmanager.listener.NotificationActionReceiver;
+import com.chooloo.www.callmanager.service.BluetoothBroadcastReceiver;
 import com.chooloo.www.callmanager.ui.fragment.DialpadFragment;
+import com.chooloo.www.callmanager.util.BluetoothUtils;
 import com.chooloo.www.callmanager.util.CallManager;
 import com.chooloo.www.callmanager.util.PermissionUtils;
 import com.chooloo.www.callmanager.util.PhoneNumberUtils;
@@ -97,6 +101,9 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
     // Call State
     private static int mState;
     private static String mStateText;
+
+    // BluetoothBroadcastReceiver
+    BluetoothBroadcastReceiver mBluetoothBroadcastReceiver;
 
     // Fragments
     DialpadFragment mDialpadFragment;
@@ -161,6 +168,7 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
     @BindView(R.id.button_keypad) ImageView mKeypadButton;
     @BindView(R.id.button_speaker) ImageView mSpeakerButton;
     @BindView(R.id.button_add_call) ImageView mAddCallButton;
+    @BindView(R.id.button_bluetooth) ImageView mBluetoothButton;
     @BindView(R.id.button_send_sms) Button mSendSmsButton;
 
     // Floating Action Buttons
@@ -183,9 +191,8 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
     @BindView(R.id.overlay_action_timer) ViewGroup mActionTimerOverlay;
     @BindView(R.id.overlay_send_sms) ViewGroup mSendSmsOverlay;
 
-    @Nullable
-    ViewGroup mCurrentOverlay = null;
-    // Notification
+    @Nullable ViewGroup mCurrentOverlay = null;
+
     private boolean mNotificationEnabled = false;
 
     @Override
@@ -212,17 +219,12 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
             if (km != null) km.requestDismissKeyguard(this, null);
         } else {
             window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         }
-
-        adaptToNavbar(); // adapt layout to system's navigation bar
-        displayInformation(); // display caller information
-        setDialpadFragment(); // set a new dialpad fragment
 
         // Initiate PowerManager and WakeLock (turn screen on/off according to distance from face)
         int field = 0x00000020;
@@ -256,26 +258,15 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
             }
         };
 
-        // Set OnLongClick listeners for answer/reject listeners
+        // set OnLongClick listeners for answer/reject listeners
         mRejectLongClickListener = new LongClickOptionsListener(this, mRejectCallOverlay, rejectListener, overlayChangeListener);
         mAnswerLongClickListener = new LongClickOptionsListener(this, mAnswerCallOverlay, answerListener, overlayChangeListener);
 
-        // Set OnTouch listeners for answer/reject buttons
+        // set OnTouch listeners for answer/reject buttons
         mRejectButton.setOnTouchListener(mRejectLongClickListener);
         mAnswerButton.setOnTouchListener(mAnswerLongClickListener);
 
-        // Hide
-        hideOverlays();
-        hideButtons();
-
-        // Set the correct text for the TextView
-        String rejectCallText = mRejectCallTimerText.getText() + " " + PreferenceUtils.getInstance().getString(R.string.pref_reject_call_timer_key) + "s";
-        mRejectCallTimerText.setText(rejectCallText);
-
-        String answerCallText = mAnswerCallTimerText.getText() + " " + PreferenceUtils.getInstance().getString(R.string.pref_answer_call_timer_key) + "s";
-        mAnswerCallTimerText.setText(answerCallText);
-
-        // Initiate Swipe listener
+        // swipe listeners
         mIncomingCallSwipeListener = new AllPurposeTouchListener(this) {
             @Override
             public void onSwipeRight() {
@@ -296,7 +287,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         };
         mOngoingCallLayout.setOnTouchListener(mIncomingCallSwipeListener);
 
-        // Sms swipe listener
         mSmsOverlaySwipeListener = new AllPurposeTouchListener(this) {
             @Override
             public void onSwipeTop() {
@@ -312,7 +302,40 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
             }
         };
 
-        // Instantiate ViewModels
+        // Bluetooth
+        mBluetoothBroadcastReceiver = new BluetoothBroadcastReceiver(this);
+        mBluetoothBroadcastReceiver.setOnBluetoothChangeListener(new BluetoothBroadcastReceiver.OnBluetoothChangeListener() {
+            @Override
+            public void onStateConnected() {
+                checkBluetooth();
+            }
+
+            @Override
+            public void onStateDisconnected() {
+                checkBluetooth();
+            }
+
+            @Override
+            public void onPlaying() {
+                Toast.makeText(getApplicationContext(), "Bluetooth started playing", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onNotPlaying() {
+                Toast.makeText(getApplicationContext(), "Bluetooth stopped playing", Toast.LENGTH_SHORT).show();
+            }
+        });
+        registerReceiver(mBluetoothBroadcastReceiver, new IntentFilter(BluetoothUtils.ACTION_CONNECTION_STATE_CHANGED));
+        registerReceiver(mBluetoothBroadcastReceiver, new IntentFilter(BluetoothUtils.ACTION_PLAYING_STATE_CHANGED));
+        checkBluetooth();
+
+        // Set the correct text for the TextView
+        String rejectCallText = mRejectCallTimerText.getText() + " " + PreferenceUtils.getInstance().getString(R.string.pref_reject_call_timer_key) + "s";
+        mRejectCallTimerText.setText(rejectCallText);
+        String answerCallText = mAnswerCallTimerText.getText() + " " + PreferenceUtils.getInstance().getString(R.string.pref_answer_call_timer_key) + "s";
+        mAnswerCallTimerText.setText(answerCallText);
+
+        // view models
         mSharedDialViewModel = ViewModelProviders.of(this).get(SharedDialViewModel.class);
         mSharedDialViewModel.getNumber().observe(this, s -> {
             if (s != null && !s.isEmpty()) {
@@ -321,15 +344,21 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
             }
         });
 
-        // Bottom Sheet Behaviour
+        // bottom sheet
         mBottomSheetBehavior = BottomSheetBehavior.from(mDialerFrame); // Set the bottom sheet behaviour
         mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN); // Hide the bottom sheet
 
+        // ui
+        hideOverlays();
+        hideButtons();
+        adaptToNavbar();
+        displayInformation();
+        setDialpadFragment();
+
+        // notification
         createNotificationChannel();
         createNotification();
     }
-
-    // -- Overrides -- //
 
     @Override
     protected void onPostCreate(@Nullable Bundle savedInstanceState) {
@@ -345,13 +374,11 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         mActionTimer.cancel();
         releaseWakeLock();
         cancelNotification();
+        unregisterReceiver(mBluetoothBroadcastReceiver);
 //        this.startService(new Intent(this, RecordService.class)
 //                .putExtra("commandType", RECORD_SERVICE_STOP));
     }
 
-    /**
-     * To disable back button
-     */
     @Override
     public void onBackPressed() {
         // In case the dialpad is opened, pressing the back button will close it
@@ -378,6 +405,7 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
     public void onKeyPressed(int keyCode, KeyEvent event) {
         CallManager.keypad((char) event.getUnicodeChar());
     }
+
     // -- On Clicks -- //
 
     //TODO silence the ringing
@@ -389,11 +417,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         setOverlay(mActionTimerOverlay);
     }
 
-    /**
-     * Starts call timer (answer)
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_floating_answer_call_timer)
     public void startAnswerCallTimer(View view) {
         int seconds = Integer.parseInt(PreferenceUtils.getInstance().getString(R.string.pref_answer_call_timer_key));
@@ -401,11 +424,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         mActionTimer.start();
     }
 
-    /**
-     * Turns on mute according to current state (if already on/off)
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_mute)
     public void toggleMute(View view) {
         Utilities.toggleViewActivation(view);
@@ -414,54 +432,43 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         mAudioManager.setMicrophoneMute(view.isActivated());
     }
 
-    /**
-     * Turns on/off the speaker according to current state (if already on/off)
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_speaker)
     public void toggleSpeaker(View view) {
         Utilities.toggleViewActivation(view);
         mAudioManager.setSpeakerphoneOn(view.isActivated());
     }
 
-    /**
-     * Puts the call on hold
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_hold)
     public void toggleHold(View view) {
         Utilities.toggleViewActivation(view);
         CallManager.hold(view.isActivated());
     }
 
-    //TODO add functionality to the Keypad button
     @OnClick(R.id.button_keypad)
     public void toggleKeypad(View view) {
         mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
     }
 
-    //TODO add functionality to the Add call button
-    @OnClick(R.id.button_add_call)
-    public void addCall(View view) {
+    // TODO add functionality
+    @OnClick(R.id.button_bluetooth)
+    public void toggleBluetooth(View view) {
+        if (mBluetoothButton.isActivated()) {
+            BluetoothUtils.toggleBluetooth(this, false);
+            mBluetoothButton.setActivated(false);
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_black_24dp));
+        } else {
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_searching_black_24dp));
+            BluetoothUtils.toggleBluetooth(this, true);
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_audio_black_24dp));
+            mBluetoothButton.setActivated(true);
+        }
     }
 
-    /**
-     * Cancel the call timer
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_cancel_timer)
     public void cancelTimer(View view) {
         mActionTimer.cancel();
     }
 
-    /**
-     * Set the sms overlay (from which you can send sms)
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_floating_send_sms)
     public void setSmsOverlay(View view) {
         if (PermissionUtils.checkPermissionsGranted(this, new String[]{SEND_SMS}, true)) {
@@ -471,11 +478,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         }
     }
 
-    /**
-     * Send sms
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_send_sms)
     public void sendSMS(View view) {
         if (mEditSms.getText() != null) {
@@ -488,22 +490,12 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         }
     }
 
-    /**
-     * Cancel sms overlay
-     *
-     * @param view the clicked view
-     */
     @OnClick(R.id.button_cancel_sms)
     public void cancelSMS(View view) {
         removeOverlay();
     }
 
-    /**
-     * Changes the color of the icon according to button status (activated or not)
-     *
-     * @param view the clicked view
-     */
-    @OnClick({R.id.button_speaker, R.id.button_hold, R.id.button_mute})
+    @OnClick({R.id.button_speaker, R.id.button_hold, R.id.button_mute, R.id.button_bluetooth})
     public void changeColors(View view) {
         ImageView imageButton = (ImageView) view;
         if (view.isActivated()) {
@@ -535,7 +527,7 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
             finish();
             CallManager.nextCall(this);
         } else {
-            (new Handler()).postDelayed(this::finish, END_CALL_MILLIS); // Delay the closing of the call
+//            (new Handler()).postDelayed(this::finish, END_CALL_MILLIS); // Delay the closing of the call
         }
     }
 
@@ -634,6 +626,7 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         mMuteButton.setVisibility(VISIBLE);
         mKeypadButton.setVisibility(VISIBLE);
         mSpeakerButton.setVisibility(VISIBLE);
+        mBluetoothButton.setVisibility(VISIBLE);
 //        mAddCallButton.setVisibility(VISIBLE);
         moveRejectButtonToMiddle();
     }
@@ -684,6 +677,20 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
                 v.setClickable(clickable);
                 v.setFocusable(false);
             }
+        }
+    }
+
+    /**
+     * detect a nav bar and adapt layout accordingly
+     */
+    private void adaptToNavbar() {
+        boolean hasNavBar = Utilities.hasNavBar(this);
+        int navBarHeight = Utilities.navBarHeight(this);
+        if (hasNavBar) {
+            mOngoingCallLayout.setPadding(0, 0, 0, navBarHeight);
+            mAnswerCallOverlay.setPadding(0, 0, 0, navBarHeight);
+            mRejectCallOverlay.setPadding(0, 0, 0, navBarHeight);
+            mDialerFrame.setPadding(0, 0, 0, navBarHeight);
         }
     }
 
@@ -776,7 +783,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         if (mCurrentOverlay != null) removeOverlay(mCurrentOverlay);
     }
 
-
     // -- Wake Lock -- //
 
     /**
@@ -792,8 +798,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
     private void releaseWakeLock() {
         if (wakeLock.isHeld()) wakeLock.release();
     }
-
-    // -- Classes -- //
 
     // -- Notification -- //
     private void createNotification() {
@@ -870,20 +874,6 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
     }
 
     /**
-     * detect a nav bar and adapt layout accordingly
-     */
-    private void adaptToNavbar() {
-        boolean hasNavBar = Utilities.hasNavBar(this);
-        int navBarHeight = Utilities.navBarHeight(this);
-        if (hasNavBar) {
-            mOngoingCallLayout.setPadding(0, 0, 0, navBarHeight);
-            mAnswerCallOverlay.setPadding(0, 0, 0, navBarHeight);
-            mRejectCallOverlay.setPadding(0, 0, 0, navBarHeight);
-            mDialerFrame.setPadding(0, 0, 0, navBarHeight);
-        }
-    }
-
-    /**
      * Set a new dialpad fragment
      */
     private void setDialpadFragment() {
@@ -894,6 +884,24 @@ public class OngoingCallActivity extends AbsThemeActivity implements DialpadFrag
         mDialpadFragment.setDigitsCanBeEdited(false);
         mDialpadFragment.setShowVoicemailButton(false);
         mDialpadFragment.setOnKeyDownListener(this);
+    }
+
+    // -- Bluetooth -- //
+    private void checkBluetooth() {
+        if (BluetoothUtils.isBluetoothHeadsetConnected()) {
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_connected_black_24dp));
+            BluetoothUtils.toggleBluetooth(this, true);
+            mBluetoothButton.setEnabled(true);
+            mBluetoothButton.setActivated(true);
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_audio_black_24dp));
+        } else {
+            BluetoothUtils.toggleBluetooth(this, false);
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_bluetooth_black_24dp));
+            mBluetoothButton.setColorFilter(ContextCompat.getColor(this, R.color.grey_800), PorterDuff.Mode.SRC_IN);
+            mBluetoothButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_disabled_black_24dp));
+            mBluetoothButton.setEnabled(false);
+            mBluetoothButton.setActivated(false);
+        }
     }
 
     class ActionTimer {

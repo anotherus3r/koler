@@ -116,8 +116,19 @@
         app:layout_constraintBottom_toTopOf="@id/button_keypad"
         app:layout_constraintEnd_toStartOf="@id/button_hold"
         app:layout_constraintHorizontal_chainStyle="packed"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/button_bluetooth"
         app:srcCompat="@drawable/ic_mic_off_black_24dp"
+        tools:visibility="visible" />
+
+    <!-- Hold Button -->
+    <ImageView
+        android:id="@+id/button_bluetooth"
+        style="@style/CallButton.ActionButton"
+        app:layout_constraintBottom_toTopOf="@id/button_speaker"
+        app:layout_constraintEnd_toStartOf="@id/button_mute"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/ic_bluetooth_black_24dp"
         tools:visibility="visible" />
 
     <!-- Speaker Button -->
