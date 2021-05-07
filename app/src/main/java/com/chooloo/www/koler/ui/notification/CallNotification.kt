@@ -11,15 +11,14 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.os.Build
-import android.telecom.Call
 import android.telecom.DisconnectCause
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.chooloo.www.koler.R
-import com.chooloo.www.koler.data.CallDetails
-import com.chooloo.www.koler.data.CallDetails.CallState.*
 import com.chooloo.www.koler.receiver.CallBroadcastReceiver
 import com.chooloo.www.koler.ui.call.CallActivity
+import com.chooloo.www.koler.util.call.CallItem
+import com.chooloo.www.koler.util.call.CallItem.Companion.CallState.*
 import com.chooloo.www.koler.util.getAttrColor
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -92,14 +91,21 @@ class CallNotification(private val context: Context) {
         }
     }
 
-    private fun buildNotification(callDetails: CallDetails): Notification {
+    private fun buildNotification(callItem: CallItem): Notification {
+        val account = callItem.getAccount(context)
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setWhen(0)
+            .setOngoing(true)
+            .setColorized(true)
             .setPriority(PRIORITY)
+            .setSmallIcon(R.drawable.icon_full_144)
+            .setContentIntent(_contentPendingIntent)
+            .setContentTitle(account.name ?: account.number)
+            .setColor(context.getAttrColor(R.attr.colorSecondary))
             .setContentText(
                 context.getString(
-                    if (callDetails.details.disconnectCause.code == DisconnectCause.MISSED) R.string.call_status_missed
-                    else when (callDetails.callState) {
+                    if (callItem.details.disconnectCause.code == DisconnectCause.MISSED) R.string.call_status_missed
+                    else when (callItem.state) {
                         ACTIVE -> R.string.call_status_active
                         DISCONNECTED -> R.string.call_status_disconnected
                         RINGING -> R.string.call_status_incoming
@@ -110,23 +116,17 @@ class CallNotification(private val context: Context) {
                     }
                 )
             )
-            .setSmallIcon(R.drawable.icon_full_144)
-            .setContentIntent(_contentPendingIntent)
-            .setColor(context.getAttrColor(R.attr.colorSecondary))
-            .setOngoing(true)
-            .setColorized(true)
-            .setContentTitle(callDetails.phoneAccount.name ?: callDetails.phoneAccount.number)
-        if (callDetails.callState == RINGING) {
+        if (callItem.state == RINGING) {
             builder.addAction(R.drawable.ic_call_black_24dp, sAnswer, _answerPendingIntent)
         }
-        if (callDetails.callState !in arrayOf(DISCONNECTED, DISCONNECTING)) {
+        if (callItem.state !in arrayOf(DISCONNECTED, DISCONNECTING)) {
             builder.addAction(R.drawable.ic_call_end_black_24dp, sHangup, _hangupPendingIntent)
         }
         return builder.build()
     }
 
-    fun show(callDetails: CallDetails) {
-        _notificationManager.notify(ID, buildNotification(callDetails))
+    fun show(callItem: CallItem) {
+        _notificationManager.notify(ID, buildNotification(callItem))
     }
 
     fun cancel() {

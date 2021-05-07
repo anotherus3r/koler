@@ -4,41 +4,47 @@ import android.net.Uri
 import android.os.Handler
 import com.chooloo.www.koler.App
 import com.chooloo.www.koler.R
-import com.chooloo.www.koler.data.CallDetails
-import com.chooloo.www.koler.data.CallDetails.CallState.*
 import com.chooloo.www.koler.ui.base.BasePresenter
-import com.chooloo.www.koler.util.call.CallManager
+import com.chooloo.www.koler.util.call.CallItem
+import com.chooloo.www.koler.util.call.CallItem.Companion.CallState.*
+import com.chooloo.www.koler.util.call.CallsManager
 
 class CallPresenter<V : CallContract.View> : BasePresenter<V>(), CallContract.Presenter<V> {
+    override fun attach(mvpView: V) {
+        super.attach(mvpView)
+        CallsManager.registerListener(object : CallsManager.CallsListener {
+            override fun onCallChanged(callItem: CallItem) {
+                super.onCallChanged(callItem)
+                if (callItem != CallsManager.primaryCall) {
+                    displayPrimaryCall(callItem)
+                } else {
+                    mvpView.updateCallView(callItem)
+                }
+            }
+        })
+    }
+
     override fun onAnswerClick() {
-        CallManager.answer()
+        CallsManager.primaryCall?.answer()
     }
 
     override fun onRejectClick() {
-        CallManager.reject()
+        CallsManager.primaryCall?.reject()
     }
 
-    override fun onScreenSwipeLeft() {
-        onRejectClick()
+    override fun displayCurrentCalls() {
+        CallsManager.primaryCall?.let { displayPrimaryCall(it) }
+        CallsManager.secondaryCalls.forEach { mvpView?.updateCallView(it) }
     }
 
-    override fun onScreenSwipeRight() {
-        onAnswerClick()
-    }
-
-    override fun onCallDetailsChanged(callDetails: CallDetails?) {
-        if (callDetails == null) {
-            return
+    private fun displayPrimaryCall(callItem: CallItem) {
+        mvpView?.getCallAccount(callItem)?.apply {
+            mvpView?.callerNameText = name ?: number ?: "Unknown"
+            photoUri?.let { mvpView?.callerImageURI = Uri.parse(it) }
         }
 
-        val phoneAccount = callDetails.phoneAccount
-        val callState = callDetails.callState
-
-        mvpView?.callerNameText = phoneAccount.name ?: phoneAccount.number ?: "Unknown"
-        phoneAccount.photoUri?.let { mvpView?.callerImageURI = Uri.parse(it) }
-
         mvpView?.stateText = App.resources?.getString(
-            when (callState) {
+            when (callItem.state) {
                 ACTIVE -> R.string.call_status_active
                 DISCONNECTED -> R.string.call_status_disconnected
                 RINGING -> R.string.call_status_incoming
@@ -49,7 +55,7 @@ class CallPresenter<V : CallContract.View> : BasePresenter<V>(), CallContract.Pr
             }
         )
 
-        when (callState) {
+        when (callItem.state) {
             CONNECTING -> mvpView?.transitionToActiveUI()
             HOLDING -> mvpView?.apply {
                 getColor(R.color.red_foreground).let { mvpView?.stateTextColor = it }
