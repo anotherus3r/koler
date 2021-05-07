@@ -4,13 +4,13 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.View
 import com.chooloo.www.koler.R
-import com.chooloo.www.koler.data.CallDetails
 import com.chooloo.www.koler.databinding.CallBinding
 import com.chooloo.www.koler.ui.base.BaseActivity
 import com.chooloo.www.koler.ui.callactions.CallActionsFragment
 import com.chooloo.www.koler.util.*
-import com.chooloo.www.koler.util.call.CallManager
+import com.chooloo.www.koler.util.call.CallItem
 
 @SuppressLint("ClickableViewAccessibility")
 class CallActivity : BaseActivity(), CallContract.View {
@@ -18,13 +18,6 @@ class CallActivity : BaseActivity(), CallContract.View {
     private val _presenter by lazy { CallPresenter<CallContract.View>() }
     private val _proximitySensor by lazy { ProximitySensor(this) }
     private val _binding by lazy { CallBinding.inflate(layoutInflater) }
-    private val _callListener by lazy {
-        object : CallManager.CallListener(this) {
-            override fun onCallDetailsChanged(callDetails: CallDetails) {
-                _presenter.onCallDetailsChanged(callDetails)
-            }
-        }
-    }
 
     override var stateText: String?
         get() = _binding.callStateText.text.toString()
@@ -61,32 +54,39 @@ class CallActivity : BaseActivity(), CallContract.View {
 
         _binding.apply {
             callAnswerButton.apply {
-                setOnClickListener { _presenter.onAnswerClick() }
                 setOnTouchListener(object : AllPurposeTouchListener(this@CallActivity) {
+                    override fun onSingleTapConfirmed(v: View?): Boolean {
+                        _presenter.onAnswerClick()
+                        return true
+                    }
+
                     override fun onSwipeRight() {
-                        _presenter.onScreenSwipeRight()
+                        _presenter.onAnswerClick()
                     }
                 })
             }
 
             callRejectButton.apply {
-                setOnClickListener { _presenter.onRejectClick() }
                 setOnTouchListener(object : AllPurposeTouchListener(this@CallActivity) {
+                    override fun onSingleTapConfirmed(v: View?): Boolean {
+                        _presenter.onRejectClick()
+                        return true
+                    }
+
                     override fun onSwipeLeft() {
-                        _presenter.onScreenSwipeLeft()
+                        _presenter.onRejectClick()
                     }
                 })
             }
         }
 
+        _presenter.displayCurrentCalls()
         setShowWhenLocked()
         disableKeyboard()
-        CallManager.registerListener(_callListener)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        CallManager.unregisterCallback(_callListener)
         _presenter.detach()
         _proximitySensor.release()
     }
@@ -116,4 +116,10 @@ class CallActivity : BaseActivity(), CallContract.View {
     override fun stopStopwatch() {
         _binding.callChronometer.stop()
     }
+
+    override fun updateCallView(callItem: CallItem) {
+        _binding.callCallsView.updateCall(callItem)
+    }
+
+    override fun getCallAccount(callItem: CallItem) = callItem.getAccount(this)
 }

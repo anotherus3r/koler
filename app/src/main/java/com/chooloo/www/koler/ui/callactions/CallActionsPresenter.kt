@@ -2,7 +2,7 @@ package com.chooloo.www.koler.ui.callactions
 
 import android.view.KeyEvent
 import com.chooloo.www.koler.ui.base.BasePresenter
-import com.chooloo.www.koler.util.call.CallManager
+import com.chooloo.www.koler.util.call.CallsManager
 
 class CallActionsPresenter<V : CallActionsContract.View> :
     BasePresenter<V>(),
@@ -15,7 +15,7 @@ class CallActionsPresenter<V : CallActionsContract.View> :
 
     override fun onHoldClick() {
         _isHolding = !_isHolding
-        CallManager.hold(_isHolding)
+        CallsManager.primaryCall?.hold()
     }
 
     override fun onMuteClick() {
@@ -28,11 +28,11 @@ class CallActionsPresenter<V : CallActionsContract.View> :
             mvpView?.stopRecording()
             _isRecording = false
         } else {
-            if (CallManager.sCall != null) {
+            CallsManager.primaryCall?.let {
                 mvpView?.startRecording()
                 mvpView?.showMessage("Recording...")
                 _isRecording = true
-            } else {
+            } ?: run {
                 mvpView?.showError("No active calls to record")
             }
         }
@@ -52,6 +52,6 @@ class CallActionsPresenter<V : CallActionsContract.View> :
     }
 
     override fun onKeypadKey(keyCode: Int, event: KeyEvent) {
-        CallManager.keypad(event.number)
+        CallsManager.primaryCall?.invokeKeypadChar(event.number)
     }
 }

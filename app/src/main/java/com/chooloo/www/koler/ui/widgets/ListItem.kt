@@ -31,12 +31,13 @@ class ListItem : LinearLayout {
     private val spacingBig by lazy { resources.getDimensionPixelSize(R.dimen.default_spacing_big) }
     private val spacingSmall by lazy { resources.getDimensionPixelSize(R.dimen.default_spacing_small) }
 
-    private var image: AvatarImageView
-    private var title: AppCompatTextView
-    private var header: AppCompatTextView
-    private var caption: AppCompatTextView
     private var _isCompact: Boolean = false
-    private var personLayout: ConstraintLayout
+
+    private val _image: AvatarImageView
+    private val _title: AppCompatTextView
+    private val _header: AppCompatTextView
+    private val _caption: AppCompatTextView
+    private val _personLayout: ConstraintLayout
 
     constructor(context: Context) : this(context, null)
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
@@ -48,7 +49,7 @@ class ListItem : LinearLayout {
         orientation = VERTICAL
         layoutParams = LayoutParams(MATCH_PARENT, WRAP_CONTENT)
 
-        header = AppCompatTextView(context, attrs, defStyleRes).apply {
+        _header = AppCompatTextView(context, attrs, defStyleRes).apply {
             isClickable = true
             isFocusable = true
             id = View.generateViewId()
@@ -61,7 +62,7 @@ class ListItem : LinearLayout {
             setTextAppearance(R.style.Koler_Text_Caption)
         }
 
-        title = AppCompatTextView(context, attrs, defStyleRes).apply {
+        _title = AppCompatTextView(context, attrs, defStyleRes).apply {
             id = View.generateViewId()
             textAlignment = TEXT_ALIGNMENT_VIEW_START
             layoutParams = ConstraintLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
@@ -71,7 +72,7 @@ class ListItem : LinearLayout {
             setTextAppearance(R.style.Koler_Text_Headline4)
         }
 
-        caption = AppCompatTextView(context, attrs, defStyleRes).apply {
+        _caption = AppCompatTextView(context, attrs, defStyleRes).apply {
             id = View.generateViewId()
             textAlignment = TEXT_ALIGNMENT_VIEW_START
             layoutParams = ConstraintLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
@@ -81,7 +82,7 @@ class ListItem : LinearLayout {
             setTextAppearance(R.style.Koler_Text_Caption)
         }
 
-        image = AvatarImageView(context, attrs).apply {
+        _image = AvatarImageView(context, attrs).apply {
             state = SHOW_INITIAL
             id = generateViewId()
             textSize = resources.getDimension(R.dimen.caption_1)
@@ -91,71 +92,56 @@ class ListItem : LinearLayout {
                 ContextCompat.getColor(context, R.color.color_image_placeholder_background)
         }
 
-        personLayout = ConstraintLayout(context, attrs, defStyleRes).apply {
+        _personLayout = ConstraintLayout(context, attrs, defStyleRes).apply {
             isClickable = true
             id = View.generateViewId()
             background = context.getSelectableItemBackgroundDrawable()
             layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
 
             setPadding(spacing)
-            addView(image)
-            addView(title)
-            addView(caption)
+            addView(_image)
+            addView(_title)
+            addView(_caption)
         }
 
         ConstraintSet().apply {
-            clone(personLayout)
+            clone(_personLayout)
 
-            //region image
-            // image on left
-            connect(image.id, BOTTOM, PARENT_ID, BOTTOM)
-            connect(image.id, START, PARENT_ID, START)
-            connect(image.id, TOP, PARENT_ID, TOP)
+            _image.id.also {
+                connect(it, BOTTOM, PARENT_ID, BOTTOM)
+                connect(it, START, PARENT_ID, START)
+                connect(it, TOP, PARENT_ID, TOP)
+            }
 
-            // image on right
-//            connect(image.id, BOTTOM, PARENT_ID, BOTTOM)
-//            connect(image.id, END, PARENT_ID, END)
-//            connect(image.id, TOP, PARENT_ID, TOP)
-            //endregion
+            _title.id.also {
+                connect(it, BOTTOM, _caption.id, TOP)
+                connect(it, START, _image.id, END)
+                connect(it, END, PARENT_ID, END)
+                connect(it, TOP, PARENT_ID, TOP)
+                setHorizontalBias(it, 0F)
+            }
 
-            //region title
-
-            // title on left
-//            connect(title.id, BOTTOM, caption.id, TOP)
-//            connect(title.id, END, image.id, START)
-//            connect(title.id, START, PARENT_ID, START)
-//            connect(title.id, TOP, PARENT_ID, TOP)
-
-            // title on right of image
-            connect(title.id, BOTTOM, caption.id, TOP)
-            connect(title.id, START, image.id, END)
-            connect(title.id, END, PARENT_ID, END)
-            connect(title.id, TOP, PARENT_ID, TOP)
-
-            setHorizontalBias(title.id, 0F)
-            //endregion
-
-            //region caption
-            connect(caption.id, BOTTOM, PARENT_ID, BOTTOM)
-            connect(caption.id, START, title.id, START)
-            connect(caption.id, TOP, title.id, BOTTOM)
-            //endregion
+            _caption.id.also {
+                connect(it, BOTTOM, PARENT_ID, BOTTOM)
+                connect(it, START, _title.id, START)
+                connect(it, TOP, _title.id, BOTTOM)
+            }
 
             createVerticalChain(
                 PARENT_ID,
                 TOP,
                 PARENT_ID,
                 BOTTOM,
-                intArrayOf(title.id, caption.id),
+                intArrayOf(_title.id, _caption.id),
                 null,
                 CHAIN_PACKED
             )
 
-            applyTo(personLayout)
+            applyTo(_personLayout)
         }
 
-        addView(header)
-        addView(personLayout)
+        addView(_header)
+        addView(_personLayout)
 
         context.obtainStyledAttributes(attrs, R.styleable.Koler_ListItem, 0, 0).also {
             titleText = it.getString(R.styleable.Koler_ListItem_title)
@@ -167,73 +153,73 @@ class ListItem : LinearLayout {
     }
 
     var titleText: String?
-        get() = title.text.toString()
+        get() = _title.text.toString()
         set(value) {
-            title.text = value ?: ""
+            _title.text = value ?: ""
         }
 
     var captionText: String?
-        get() = caption.text.toString()
+        get() = _caption.text.toString()
         set(value) {
-            caption.apply {
+            _caption.apply {
                 text = value ?: ""
                 visibility = if (value == null) GONE else VISIBLE
             }
         }
 
     var headerText: String?
-        get() = header.text.toString()
+        get() = _header.text.toString()
         set(value) {
-            header.apply {
+            _header.apply {
                 text = value
                 visibility = if (value != null && value != "") VISIBLE else GONE
             }
         }
 
     var imageDrawable: Drawable?
-        get() = image.drawable
+        get() = _image.drawable
         set(value) {
-            image.setImageDrawable(value)
-            image.state = SHOW_IMAGE
+            _image.setImageDrawable(value)
+            _image.state = SHOW_IMAGE
         }
 
     var isCompact: Boolean
         get() = _isCompact
         set(value) {
             if (value) {
-                personLayout.setPadding(spacing, 3, spacing, 3)
-                header.setPadding(spacing, spacingSmall, spacing, 3)
+                _personLayout.setPadding(spacing, 3, spacing, 3)
+                _header.setPadding(spacing, spacingSmall, spacing, 3)
             } else {
-                personLayout.setPadding(spacing, spacingSmall, spacing, spacingSmall)
-                header.setPadding(spacing, spacingSmall, context.sizeInDp(5), spacingSmall)
+                _personLayout.setPadding(spacing, spacingSmall, spacing, spacingSmall)
+                _header.setPadding(spacing, spacingSmall, context.sizeInDp(5), spacingSmall)
             }
         }
 
     var imageVisibility: Boolean
-        get() = image.visibility == VISIBLE
+        get() = _image.visibility == VISIBLE
         set(value) {
-            image.visibility = if (value) VISIBLE else GONE
+            _image.visibility = if (value) VISIBLE else GONE
         }
 
     fun setImageInitials(text: String?) {
-        image.text = text
-        text?.let { image.state = SHOW_INITIAL }
+        _image.text = text
+        text?.let { _image.state = SHOW_INITIAL }
     }
 
     fun setImageUri(imageUri: Uri?) {
-        image.setImageURI(imageUri)
-        image.state = if (imageUri != null) SHOW_IMAGE else SHOW_INITIAL
+        _image.setImageURI(imageUri)
+        _image.state = if (imageUri != null) SHOW_IMAGE else SHOW_INITIAL
     }
 
     fun setImageBackgroundColor(@ColorInt color: Int) {
-        image.setBackgroundColor(color)
+        _image.setBackgroundColor(color)
     }
 
     override fun setOnClickListener(onClickListener: OnClickListener?) {
-        personLayout.setOnClickListener(onClickListener)
+        _personLayout.setOnClickListener(onClickListener)
     }
 
     override fun setOnLongClickListener(onLongClickListener: OnLongClickListener?) {
-        personLayout.setOnLongClickListener(onLongClickListener)
+        _personLayout.setOnLongClickListener(onLongClickListener)
     }
 }

@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="Koler" />
-
-    <declare-styleable name="Koler.ListItem">
+    <declare-styleable name="Koler">
         <attr name="title" format="string" localization="suggested" />
         <attr name="caption" format="string" localization="suggested" />
-        <attr name="header" format="string" />
         <attr name="src" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="Koler.ListItem">
+        <attr name="src" />
+        <attr name="title" />
+        <attr name="caption" />
+        <attr name="header" format="string" />
         <attr name="compact" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="Koler.CallItem">
+        <attr name="src" />
+        <attr name="title" />
+        <attr name="caption" />
     </declare-styleable>
 
     <declare-styleable name="Koler.DialpadKey">
