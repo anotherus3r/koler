@@ -23,6 +23,6 @@ interface CallContract : BaseContract {
     interface Presenter<V : View> : BaseContract.Presenter<V> {
         fun onAnswerClick()
         fun onRejectClick()
-        fun displayCurrentCalls()
+        fun onDisplayCalls()
     }
 }

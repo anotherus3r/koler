@@ -4,20 +4,22 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.View
 import com.chooloo.www.koler.R
 import com.chooloo.www.koler.databinding.CallBinding
 import com.chooloo.www.koler.ui.base.BaseActivity
 import com.chooloo.www.koler.ui.callactions.CallActionsFragment
-import com.chooloo.www.koler.util.*
+import com.chooloo.www.koler.util.AnimationManager
+import com.chooloo.www.koler.util.ProximitySensor
 import com.chooloo.www.koler.util.call.CallItem
+import com.chooloo.www.koler.util.disableKeyboard
+import com.chooloo.www.koler.util.setShowWhenLocked
 
 @SuppressLint("ClickableViewAccessibility")
 class CallActivity : BaseActivity(), CallContract.View {
-    private val _animationManager by lazy { AnimationManager(this) }
-    private val _presenter by lazy { CallPresenter<CallContract.View>() }
     private val _proximitySensor by lazy { ProximitySensor(this) }
+    private val _animationManager by lazy { AnimationManager(this) }
     private val _binding by lazy { CallBinding.inflate(layoutInflater) }
+    private val _presenter by lazy { CallPresenter<CallContract.View>() }
 
     override var stateText: String?
         get() = _binding.callStateText.text.toString()
@@ -53,36 +55,13 @@ class CallActivity : BaseActivity(), CallContract.View {
         _proximitySensor.acquire()
 
         _binding.apply {
-            callAnswerButton.apply {
-                setOnTouchListener(object : AllPurposeTouchListener(this@CallActivity) {
-                    override fun onSingleTapConfirmed(v: View?): Boolean {
-                        _presenter.onAnswerClick()
-                        return true
-                    }
-
-                    override fun onSwipeRight() {
-                        _presenter.onAnswerClick()
-                    }
-                })
-            }
-
-            callRejectButton.apply {
-                setOnTouchListener(object : AllPurposeTouchListener(this@CallActivity) {
-                    override fun onSingleTapConfirmed(v: View?): Boolean {
-                        _presenter.onRejectClick()
-                        return true
-                    }
-
-                    override fun onSwipeLeft() {
-                        _presenter.onRejectClick()
-                    }
-                })
-            }
+            callAnswerButton.setOnClickListener { _presenter.onAnswerClick() }
+            callRejectButton.setOnClickListener { _presenter.onRejectClick() }
         }
 
-        _presenter.displayCurrentCalls()
-        setShowWhenLocked()
+        _presenter.onDisplayCalls()
         disableKeyboard()
+        setShowWhenLocked()
     }
 
     override fun onDestroy() {

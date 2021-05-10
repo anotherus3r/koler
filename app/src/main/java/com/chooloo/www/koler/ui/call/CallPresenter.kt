@@ -32,7 +32,7 @@ class CallPresenter<V : CallContract.View> : BasePresenter<V>(), CallContract.Pr
         CallsManager.primaryCall?.reject()
     }
 
-    override fun displayCurrentCalls() {
+    override fun onDisplayCalls() {
         CallsManager.primaryCall?.let { displayPrimaryCall(it) }
         CallsManager.secondaryCalls.forEach { mvpView?.updateCallView(it) }
     }
