@@ -90,6 +90,7 @@
     <string name="pref_key_unblock_number">unblock_number</string>
     <string name="pref_key_records_enabled">record_enabled</string>
     <string name="pref_key_unblock_contact">unblock_contact</string>
+    <string name="pref_key_default_dialer_blocked_notice">default_dialer_blocked</string>
     <!--endregion-->
 
     <!--region pref title-->
@@ -118,9 +119,13 @@
 
     <!--region errors-->
     <string name="error_no_results">No results :/</string>
-    <string name="error_no_results_phones">No phone numbers :/</string>
-    <string name="error_no_results_contacts">No contacts :/</string>
+    <string name="error_no_results_calls">No calls :/</string>
     <string name="error_no_results_recents">No recents :/</string>
+    <string name="error_no_results_contacts">No contacts :/</string>
+    <string name="error_no_results_phones">No phone numbers :/</string>
+    <string name="error_not_default_dialer">Please set as default dialer</string>
+    <string name="error_not_default_dialer_blocked">Set koler as default dialer to see blocked numbers</string>
+    <string name="error_not_default_dialer_call">Set koler as your default dialer to make calls</string>
 
     <string name="error_no_permissions">I need permissions :/</string>
     <string name="error_no_permissions_contacts">I need permission to read contacts :)</string>

@@ -9,14 +9,15 @@ interface CallContract : BaseContract {
     interface View : BaseContract.View {
         var stateText: String?
         var stateTextColor: Int
-        var callerNameText: String?
         var callerImageURI: Uri?
+        var callerNameText: String?
+        var secondaryCallsVisibility: Boolean
 
         fun stopStopwatch()
         fun blinkStateText()
         fun startStopwatch()
         fun transitionToActiveUI()
-        fun updateCallView(callItem: CallItem)
+        fun updateSecondaryCall(callItem: CallItem)
         fun getCallAccount(callItem: CallItem): PhoneLookupAccount
     }
 

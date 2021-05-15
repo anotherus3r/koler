@@ -11,7 +11,7 @@ import com.chooloo.www.koler.util.call.CallItem
 
 class CallsView : ScrollView {
     private val _linearLayout: LinearLayout
-    private val _calls = HashMap<CallItem, CallView>()
+    private val _calls = HashMap<CallItem, CallListItem>()
 
     constructor(context: Context) : this(context, null)
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
@@ -29,9 +29,10 @@ class CallsView : ScrollView {
     private fun getCallView(callItem: CallItem) = _calls.getOrDefault(callItem, null)
 
     fun addCall(callItem: CallItem) {
-        val callItemView = CallView.fromCallItem(callItem, context)
+        val callItemView = CallListItem.fromCallItem(callItem, context)
         _calls[callItem] = callItemView
         _linearLayout.addView(callItemView)
+        callItemView.showCallState(callItem.state)
     }
 
     fun removeCall(callItem: CallItem) {
@@ -42,9 +43,11 @@ class CallsView : ScrollView {
     }
 
     fun updateCall(callItem: CallItem) {
-        getCallView(callItem)?.showCallState(callItem.state)
-        if (callItem.isDisconnected) {
-            removeCall(callItem)
+        val callView = getCallView(callItem)
+        when {
+            callView == null -> addCall(callItem)
+            callItem.isDisconnected -> removeCall(callItem)
+            else -> callView.showCallState(callItem.state)
         }
     }
 

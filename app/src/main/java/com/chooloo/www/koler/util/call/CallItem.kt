@@ -124,4 +124,7 @@ class CallItem(
             }
         }
     }
+
+    fun isTheSameCall(callItem: CallItem?) =
+        details.accountHandle.id == callItem?.details?.accountHandle?.id
 }

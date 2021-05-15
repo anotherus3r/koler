@@ -11,9 +11,10 @@ class PhonesAdapter : ListAdapter<PhoneAccount>() {
         listItem.apply {
             titleText = item.number
             imageVisibility = false
-            
-            if (context.isNumberBlocked(item.number)) {
-                imageDrawable = ContextCompat.getDrawable(context, R.drawable.round_block_black_24)
+
+            if (listItem.context.isNumberBlocked(item.number)) {
+                imageDrawable =
+                    ContextCompat.getDrawable(context, R.drawable.round_block_black_24)
             }
         }
     }

@@ -4,10 +4,13 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import com.chooloo.www.koler.R
 import com.chooloo.www.koler.databinding.CallBinding
 import com.chooloo.www.koler.ui.base.BaseActivity
 import com.chooloo.www.koler.ui.callactions.CallActionsFragment
+import com.chooloo.www.koler.ui.calls.CallsFragment
 import com.chooloo.www.koler.util.AnimationManager
 import com.chooloo.www.koler.util.ProximitySensor
 import com.chooloo.www.koler.util.call.CallItem
@@ -16,10 +19,11 @@ import com.chooloo.www.koler.util.setShowWhenLocked
 
 @SuppressLint("ClickableViewAccessibility")
 class CallActivity : BaseActivity(), CallContract.View {
-    private val _proximitySensor by lazy { ProximitySensor(this) }
-    private val _animationManager by lazy { AnimationManager(this) }
     private val _binding by lazy { CallBinding.inflate(layoutInflater) }
     private val _presenter by lazy { CallPresenter<CallContract.View>() }
+    private val _proximitySensor by lazy { ProximitySensor(this) }
+    private val _animationManager by lazy { AnimationManager(this) }
+    private val _secondaryCallsFragment by lazy { CallsFragment.newInstance() }
 
     override var stateText: String?
         get() = _binding.callStateText.text.toString()
@@ -43,6 +47,12 @@ class CallActivity : BaseActivity(), CallContract.View {
         get() = null
         set(value) {
             _binding.callImage.setImageURI(value)
+        }
+
+    override var secondaryCallsVisibility: Boolean
+        get() = _binding.callListContainer.visibility == VISIBLE
+        set(value) {
+            _binding.callListContainer.visibility = if (value) VISIBLE else GONE
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,17 +80,6 @@ class CallActivity : BaseActivity(), CallContract.View {
         _proximitySensor.release()
     }
 
-    override fun transitionToActiveUI() {
-        if (_binding.root.currentState == R.id.incoming_call) {
-            supportFragmentManager
-                .beginTransaction()
-                .add(_binding.callActionsContainer.id, CallActionsFragment.newInstance())
-                .commitNow()
-            _animationManager.showView(_binding.callActionsContainer, true)
-            _binding.root.transitionToEnd()
-        }
-    }
-
     override fun blinkStateText() {
         _animationManager.blinkView(_binding.callStateText, 2500)
     }
@@ -96,8 +95,19 @@ class CallActivity : BaseActivity(), CallContract.View {
         _binding.callChronometer.stop()
     }
 
-    override fun updateCallView(callItem: CallItem) {
-        _binding.callCallsView.updateCall(callItem)
+    override fun transitionToActiveUI() {
+        if (_binding.root.currentState == R.id.incoming_call) {
+            supportFragmentManager
+                .beginTransaction()
+                .add(_binding.callActionsContainer.id, CallActionsFragment.newInstance())
+                .commitNow()
+            _animationManager.showView(_binding.callActionsContainer, true)
+            _binding.root.transitionToEnd()
+        }
+    }
+
+    override fun updateSecondaryCall(callItem: CallItem) {
+        _secondaryCallsFragment.updateCallItem(callItem)
     }
 
     override fun getCallAccount(callItem: CallItem) = callItem.getAccount(this)

@@ -9,6 +9,7 @@ import android.telecom.TelecomManager
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.chooloo.www.koler.R
+import com.chooloo.www.koler.ui.base.BaseActivity
 
 const val RC_DEFAULT_DIALER = 0
 const val RC_READ_CONTACTS = 1
@@ -65,6 +66,15 @@ fun Activity.runWithPermissions(
     blockedCallback,
     rationaleMessage
 )
+
+fun BaseActivity.runWithDefaultDialer(errorMessage: String? = null, callback: () -> Unit) {
+    if (!isDefaultDialer()) {
+        showError(errorMessage ?: getString(R.string.error_not_default_dialer))
+        requestDefaultDialer()
+    } else {
+        callback.invoke()
+    }
+}
 
 fun Activity.checkPermissions(
     permissions: Array<String>,

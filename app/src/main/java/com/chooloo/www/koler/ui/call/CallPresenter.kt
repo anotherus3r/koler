@@ -15,10 +15,10 @@ class CallPresenter<V : CallContract.View> : BasePresenter<V>(), CallContract.Pr
         CallsManager.registerListener(object : CallsManager.CallsListener {
             override fun onCallChanged(callItem: CallItem) {
                 super.onCallChanged(callItem)
-                if (callItem != CallsManager.primaryCall) {
+                if (callItem.isTheSameCall(CallsManager.primaryCall)) {
                     displayPrimaryCall(callItem)
                 } else {
-                    mvpView.updateCallView(callItem)
+                    mvpView.updateSecondaryCall(callItem)
                 }
             }
         })
@@ -34,7 +34,7 @@ class CallPresenter<V : CallContract.View> : BasePresenter<V>(), CallContract.Pr
 
     override fun onDisplayCalls() {
         CallsManager.primaryCall?.let { displayPrimaryCall(it) }
-        CallsManager.secondaryCalls.forEach { mvpView?.updateCallView(it) }
+        CallsManager.secondaryCalls.forEach { mvpView?.updateSecondaryCall(it) }
     }
 
     private fun displayPrimaryCall(callItem: CallItem) {
@@ -72,6 +72,8 @@ class CallPresenter<V : CallContract.View> : BasePresenter<V>(), CallContract.Pr
                 blinkStateText()
                 stopStopwatch()
                 Handler().postDelayed({ finish() }, 2000)
+            }
+            else -> {
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.preference.Preference
 import com.chooloo.www.koler.R
 import com.chooloo.www.koler.ui.base.BasePreferenceFragment
 import com.chooloo.www.koler.util.*
+import com.chooloo.www.koler.util.permissions.runWithDefaultDialer
 import com.chooloo.www.koler.util.permissions.runWithPrompt
 
 class ContactPreferencesFragment : BasePreferenceFragment(), ContactPreferencesContract.View {
@@ -56,8 +57,10 @@ class ContactPreferencesFragment : BasePreferenceFragment(), ContactPreferencesC
                 showMessage(R.string.contact_blocked)
             }
         } else {
-            _contact.phoneAccounts.forEach { _activity.unblockNumber(it.number) }
-            showMessage(R.string.contact_unblocked)
+            _activity.runWithDefaultDialer(getString(R.string.pref_key_default_dialer_blocked_notice)) {
+                _contact.phoneAccounts.forEach { _activity.unblockNumber(it.number) }
+                showMessage(R.string.contact_unblocked)
+            }
         }
     }
 

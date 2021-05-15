@@ -67,7 +67,7 @@ abstract class ListFragment<ItemType, DataType, Adapter : ListAdapter<ItemType>>
             }
             itemsSwipeRefreshLayout.apply {
                 setOnRefreshListener(_presenter::onSwipeRefresh)
-                if(!_isSearchable){
+                if (!_isSearchable) {
                     setDistanceToTriggerSync(9999999)
                 }
             }
@@ -121,7 +121,7 @@ abstract class ListFragment<ItemType, DataType, Adapter : ListAdapter<ItemType>>
         _binding.itemsSwipeRefreshLayout.isRefreshing = isRefreshing
     }
 
-    abstract fun onAttachData()
-    abstract fun onItemClick(item: ItemType)
-    abstract fun onItemLongClick(item: ItemType)
+    open fun onAttachData() {}
+    open fun onItemClick(item: ItemType) {}
+    open fun onItemLongClick(item: ItemType) {}
 }

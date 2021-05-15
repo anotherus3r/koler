@@ -51,6 +51,32 @@ abstract class ListAdapter<DataType> : RecyclerView.Adapter<ListItemHolder>() {
         return null
     }
 
+    fun addItem(item: DataType) {
+        data.items.add(item)
+        notifyItemInserted(data.items.size - 1)
+    }
+
+    fun removeItem(item: DataType) {
+        data.items.forEachIndexed { index, dataItem ->
+            if (dataItem == item) {
+                data.items.removeAt(index)
+                notifyItemRemoved(index)
+            }
+        }
+    }
+
+    fun insertItem(item: DataType, position: Int) {
+        data.items[position] = item
+        notifyItemInserted(position)
+    }
+
+    fun updateItem(item: DataType, position: Int) {
+        if (data.items.size >= position) {
+            data.items[position] = item
+            notifyItemChanged(position)
+        }
+    }
+
     fun setOnItemClickListener(onItemClickListener: (item: DataType) -> Unit) {
         _onItemClickListener = onItemClickListener
     }
