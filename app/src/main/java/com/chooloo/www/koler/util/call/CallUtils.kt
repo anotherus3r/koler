@@ -15,8 +15,6 @@ import com.chooloo.www.koler.R
 import com.chooloo.www.koler.ui.base.BaseActivity
 import com.chooloo.www.koler.util.lookupContactNumber
 import com.chooloo.www.koler.util.permissions.hasSelfPermission
-import com.chooloo.www.koler.util.permissions.isDefaultDialer
-import com.chooloo.www.koler.util.permissions.requestDefaultDialer
 import com.chooloo.www.koler.util.permissions.runWithDefaultDialer
 
 
@@ -36,7 +34,7 @@ fun Call.lookupContact(context: Context) =
 
 //region activity related functions
 fun BaseActivity.call(number: String) {
-    runWithDefaultDialer(getString(R.string.error_not_default_dialer_call)){
+    runWithDefaultDialer(R.string.error_not_default_dialer_call) {
         val callIntent = Intent(Intent.ACTION_CALL)
         callIntent.data = Uri.parse("tel:${Uri.encode(number)}")
         startActivity(callIntent)

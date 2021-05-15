@@ -51,13 +51,13 @@ class ContactPreferencesFragment : BasePreferenceFragment(), ContactPreferencesC
     }
 
     override fun toggleContactBlocked(isBlock: Boolean) {
-        if (isBlock) {
-            _activity.runWithPrompt(R.string.warning_block_contact) {
-                _contact.phoneAccounts.forEach { _activity.blockNumber(it.number) }
-                showMessage(R.string.contact_blocked)
-            }
-        } else {
-            _activity.runWithDefaultDialer(getString(R.string.pref_key_default_dialer_blocked_notice)) {
+        _activity.runWithDefaultDialer(R.string.error_not_default_dialer_blocked) {
+            if (isBlock) {
+                _activity.runWithPrompt(R.string.warning_block_contact) {
+                    _contact.phoneAccounts.forEach { _activity.blockNumber(it.number) }
+                    showMessage(R.string.contact_blocked)
+                }
+            } else {
                 _contact.phoneAccounts.forEach { _activity.unblockNumber(it.number) }
                 showMessage(R.string.contact_unblocked)
             }

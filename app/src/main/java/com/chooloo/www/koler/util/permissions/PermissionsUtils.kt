@@ -6,6 +6,7 @@ import android.content.Context.TELECOM_SERVICE
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.telecom.TelecomManager
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.chooloo.www.koler.R
@@ -67,9 +68,9 @@ fun Activity.runWithPermissions(
     rationaleMessage
 )
 
-fun BaseActivity.runWithDefaultDialer(errorMessage: String? = null, callback: () -> Unit) {
+fun BaseActivity.runWithDefaultDialer(@StringRes errorMessageRes: Int? = null, callback: () -> Unit) {
     if (!isDefaultDialer()) {
-        showError(errorMessage ?: getString(R.string.error_not_default_dialer))
+        showError(getString(errorMessageRes ?: R.string.error_not_default_dialer))
         requestDefaultDialer()
     } else {
         callback.invoke()
