@@ -57,6 +57,14 @@
         app:layout_constraintTop_toBottomOf="@id/call_state_text"
         tools:text="John Baba" />
 
+    <com.chooloo.www.koler.ui.widgets.CallsView
+        android:id="@+id/call_calls_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/call_name_text" />
+
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/call_list_container"
         android:layout_width="match_parent"
